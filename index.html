@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Desain 3D dengan Tinkercad — Modul Pelatihan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============ TOKENS ============ */
+:root{
+  --bg: #14181D;
+  --bg-2: #1B2028;
+  --bg-3: #20262F;
+  --ink: #EEEFF2;
+  --muted: #8B93A1;
+  --muted-2: #5E6673;
+  --amber: #E8873A;
+  --amber-dim: #6b4a2c;
+  --cyan: #5FC9D6;
+  --cream: #F3EEE3;
+  --cream-2: #E9E2D2;
+  --line: rgba(255,255,255,0.09);
+  --line-strong: rgba(255,255,255,0.16);
+  --danger: #D6725F;
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --nav-h: 64px;
+  --ruler-h: 58px;
+}
+
+*{ box-sizing:border-box; }
+html,body{ height:100%; }
+body{
+  margin:0;
+  background:
+    radial-gradient(ellipse at 15% 8%, rgba(232,135,58,0.06), transparent 40%),
+    radial-gradient(ellipse at 85% 92%, rgba(95,201,214,0.05), transparent 45%),
+    var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  overflow:hidden;
+}
+
+/* faint blueprint graph texture, restrained */
+.stage::before{
+  content:"";
+  position:absolute; inset:0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+  background-size: 64px 64px;
+  pointer-events:none;
+  mask-image: radial-gradient(ellipse at 50% 40%, black 0%, transparent 75%);
+}
+
+::selection{ background: var(--amber); color:#1a1310; }
+
+/* ============ NAVBAR ============ */
+.navbar{
+  position:fixed; top:0; left:0; right:0; height:var(--nav-h);
+  display:flex; align-items:center; justify-content:space-between;
+  padding: 0 28px;
+  background: rgba(20,24,29,0.72);
+  backdrop-filter: blur(14px) saturate(140%);
+  border-bottom: 1px solid var(--line);
+  z-index:100;
+}
+.brand{ display:flex; align-items:center; gap:12px; }
+.brand-mark{
+  width:30px; height:30px; position:relative;
+  transform-style:preserve-3d;
+  animation: spin-mark 14s linear infinite;
+}
+@keyframes spin-mark{ to{ transform: rotateY(360deg) rotateX(15deg); } }
+.brand-mark span{
+  position:absolute; inset:0;
+  border:1.5px solid var(--amber);
+  background: rgba(232,135,58,0.12);
+}
+.brand-mark span:nth-child(1){ transform: translateZ(15px); }
+.brand-mark span:nth-child(2){ transform: rotateY(90deg) translateZ(15px); }
+.brand-mark span:nth-child(3){ transform: rotateX(90deg) translateZ(15px); }
+.brand-text{ font-family:var(--font-display); font-weight:600; font-size:15px; letter-spacing:0.02em; }
+.brand-text small{ display:block; font-family:var(--font-mono); font-weight:400; font-size:10px; letter-spacing:0.18em; color:var(--muted); text-transform:uppercase; margin-top:1px; }
+
+.nav-controls{ display:flex; align-items:center; gap:18px; }
+.slide-counter{ font-family:var(--font-mono); font-size:12px; color:var(--muted); letter-spacing:0.05em; min-width:58px; text-align:center; }
+.slide-counter b{ color:var(--ink); font-weight:600; }
+.nav-btn-group{ display:flex; gap:6px; }
+.nav-btn{
+  width:34px; height:34px; border-radius:8px;
+  border:1px solid var(--line-strong); background:var(--bg-3); color:var(--ink);
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+  transition: background .15s ease, border-color .15s ease, transform .15s ease;
+}
+.nav-btn:hover{ background:#282f39; border-color:var(--amber); }
+.nav-btn:active{ transform: scale(0.92); }
+.nav-btn svg{ width:16px; height:16px; }
+.nav-btn.primary{ background: var(--amber); border-color:var(--amber); color:#1a1310; }
+.nav-btn.primary:hover{ background:#f0973f; }
+
+/* ============ STAGE ============ */
+.stage{
+  position:fixed; top:var(--nav-h); left:0; right:0; bottom:var(--ruler-h);
+  overflow:hidden;
+}
+.slide{
+  position:absolute; inset:0;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding: 40px 64px;
+  opacity:0; visibility:hidden;
+  transform: translateX(40px) scale(0.985);
+  transition: opacity .5s cubic-bezier(.22,.61,.36,1), transform .55s cubic-bezier(.22,.61,.36,1), visibility 0s linear .5s;
+}
+.slide.active{
+  opacity:1; visibility:visible; transform:translateX(0) scale(1);
+  transition: opacity .5s cubic-bezier(.22,.61,.36,1), transform .55s cubic-bezier(.22,.61,.36,1);
+}
+.slide.exit-left{ transform: translateX(-40px) scale(0.985); }
+@media (prefers-reduced-motion: reduce){
+  .slide{ transition: opacity .25s linear; transform:none !important; }
+  .brand-mark{ animation:none; }
+}
+
+.slide-inner{ width:100%; max-width:1180px; margin:0 auto; }
+.eyebrow{
+  font-family:var(--font-mono); font-size:11.5px; letter-spacing:0.22em; text-transform:uppercase;
+  color:var(--amber); margin:0 0 14px 0; display:flex; align-items:center; gap:10px;
+}
+.eyebrow::before{ content:""; width:22px; height:1px; background:var(--amber); display:inline-block; }
+h1.slide-title{
+  font-family:var(--font-display); font-weight:700; font-size:40px; line-height:1.08;
+  margin:0 0 14px 0; color:var(--ink); letter-spacing:-0.01em;
+}
+p.slide-sub{ font-family:var(--font-body); font-size:15.5px; color:var(--muted); margin:0 0 30px 0; max-width:640px; line-height:1.55; }
+
+/* ============ RULER NAV (signature element) ============ */
+.ruler{
+  position:fixed; left:0; right:0; bottom:0; height:var(--ruler-h);
+  background: var(--bg-2); border-top:1px solid var(--line);
+  z-index:100; display:flex; align-items:flex-end; padding: 0 28px 10px 28px;
+}
+.ruler-track{ position:relative; flex:1; height:34px; }
+.ruler-fill{
+  position:absolute; left:0; bottom:12px; height:2px; background:var(--amber);
+  transition: width .5s cubic-bezier(.22,.61,.36,1);
+}
+.ruler-baseline{ position:absolute; left:0; right:0; bottom:12px; height:1px; background:var(--line-strong); }
+.tick{
+  position:absolute; bottom:12px; width:1px; height:8px; background:var(--muted-2);
+  transform:translateX(-0.5px);
+}
+.tick-btn{
+  position:absolute; bottom:0; transform:translateX(-50%);
+  display:flex; flex-direction:column; align-items:center; gap:5px;
+  background:none; border:none; cursor:pointer; padding:4px 6px;
+}
+.tick-btn .stem{ width:1px; height:8px; background:var(--muted-2); transition:background .2s, height .2s; }
+.tick-btn .num{ font-family:var(--font-mono); font-size:9.5px; color:var(--muted-2); letter-spacing:0.03em; transition:color .2s; }
+.tick-btn:hover .stem{ background:var(--cyan); }
+.tick-btn:hover .num{ color:var(--cyan); }
+.tick-btn.current .stem{ background:var(--amber); height:12px; }
+.tick-btn.current .num{ color:var(--amber); font-weight:600; }
+.ruler-pointer{
+  position:absolute; bottom:20px; transform:translateX(-50%);
+  width:0; height:0; border-left:5px solid transparent; border-right:5px solid transparent;
+  border-top:6px solid var(--cyan); transition: left .5s cubic-bezier(.22,.61,.36,1);
+}
+.ruler-unit{ font-family:var(--font-mono); font-size:10px; color:var(--muted-2); margin-left:18px; padding-bottom:2px; letter-spacing:0.05em;}
+
+/* ============ REUSABLE SLIDE COMPONENTS ============ */
+.icon{ width:20px; height:20px; stroke:currentColor; fill:none; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+
+.badge{
+  width:44px; height:44px; border-radius:11px; flex:none;
+  background: rgba(232,135,58,0.12); border:1px solid rgba(232,135,58,0.28);
+  display:flex; align-items:center; justify-content:center; color:var(--amber);
+}
+.badge.cyan{ background: rgba(95,201,214,0.12); border-color: rgba(95,201,214,0.28); color:var(--cyan); }
+
+.card{
+  background: var(--bg-3); border:1px solid var(--line); border-radius:14px; padding:22px;
+}
+.card-dark{
+  background: linear-gradient(155deg, #23262b, #1a1d21); border:1px solid var(--line-strong); border-radius:14px; padding:26px;
+}
+
+.list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:13px; }
+.list li{ display:flex; gap:11px; font-size:13.5px; line-height:1.5; color:var(--ink); }
+.list li::before{ content:"—"; color:var(--amber); flex:none; font-family:var(--font-mono); }
+.list.on-dark li{ color:#E7E4DC; }
+.list.numbered{ counter-reset:step; }
+.list.numbered li{ counter-increment:step; }
+.list.numbered li::before{ content: counter(step, decimal-leading-zero); color:var(--amber); font-family:var(--font-mono); font-size:11.5px; }
+
+.frame{
+  border-radius:12px; padding:10px; background:var(--cream);
+  box-shadow: 0 24px 48px -18px rgba(0,0,0,0.55), 0 2px 0 rgba(255,255,255,0.04) inset;
+}
+.frame img{ display:block; width:100%; border-radius:6px; }
+.frame-cap{ font-family:var(--font-mono); font-size:10.5px; color:var(--muted); text-align:center; margin-top:10px; letter-spacing:0.02em; }
+
+.grid-2{ display:grid; grid-template-columns: 1.15fr 0.85fr; gap:34px; align-items:center; width:100%; }
+.grid-2.rev{ grid-template-columns: 0.85fr 1.15fr; }
+.goal-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; width:100%; }
+.goal-card{ display:flex; gap:14px; align-items:center; }
+.goal-card p{ margin:0; font-size:13px; color:var(--ink); line-height:1.5; }
+
+.steps-row{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; width:100%; }
+.step-card{ text-align:left; position:relative; }
+.step-card .badge{ margin-bottom:16px; }
+.step-card h4{ font-family:var(--font-display); font-size:14.5px; margin:0 0 8px; }
+.step-card p{ font-size:11.8px; color:var(--muted); line-height:1.5; margin:0; }
+.step-card .tag{ font-family:var(--font-mono); font-size:10.5px; color:var(--amber); letter-spacing:0.08em; }
+
+.split-2{ display:grid; grid-template-columns:1fr 1fr; gap:22px; width:100%; }
+.mini-title{ font-family:var(--font-display); font-weight:600; font-size:16px; margin:0 0 6px; color:var(--ink); }
+.mini-title.on-dark{ color:var(--amber); }
+
+table.cad{ width:100%; border-collapse:collapse; font-size:13px; }
+table.cad th{ text-align:left; font-family:var(--font-mono); font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase; color:var(--bg); background:var(--amber); padding:12px 16px; }
+table.cad th:first-child{ border-radius:8px 0 0 0; }
+table.cad th:last-child{ border-radius:0 8px 0 0; }
+table.cad td{ padding:13px 16px; border-bottom:1px solid var(--line); color:var(--ink); vertical-align:top; }
+table.cad tr:last-child td{ border-bottom:none; }
+table.cad td:first-child{ color:var(--amber); font-family:var(--font-mono); font-size:12px; white-space:nowrap; }
+
+/* ============ SLIDE 1 — TITLE ============ */
+.hero-wrap{ display:grid; grid-template-columns:1.2fr 0.8fr; gap:40px; align-items:center; width:100%; }
+.meta-row{ display:flex; gap:8px; font-size:13px; margin-bottom:8px; }
+.meta-row .k{ color:var(--muted); font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:0.08em; min-width:110px; padding-top:2px;}
+.meta-row .v{ color:var(--ink); }
+.hero-divider{ width:56px; height:2px; background:var(--amber); margin: 22px 0; }
+
+/* rotating iso cube — signature hero element, echoes Tinkercad's own orientation cube */
+.cube-stage{ perspective:900px; display:flex; align-items:center; justify-content:center; height:320px; }
+.cube{
+  position:relative; width:170px; height:170px; transform-style:preserve-3d;
+  animation: cube-spin 22s linear infinite;
+}
+@keyframes cube-spin{ from{ transform: rotateX(-24deg) rotateY(0deg);} to{ transform: rotateX(-24deg) rotateY(360deg);} }
+.face{
+  position:absolute; width:170px; height:170px;
+  border:1px solid rgba(232,135,58,0.5);
+  background: linear-gradient(160deg, rgba(232,135,58,0.14), rgba(95,201,214,0.06));
+  display:flex; align-items:center; justify-content:center;
+  font-family:var(--font-mono); font-size:11px; letter-spacing:0.18em; color:var(--amber);
+}
+.face.front{ transform: translateZ(85px); }
+.face.back{ transform: rotateY(180deg) translateZ(85px); }
+.face.right{ transform: rotateY(90deg) translateZ(85px); }
+.face.left{ transform: rotateY(-90deg) translateZ(85px); }
+.face.top{ transform: rotateX(90deg) translateZ(85px); }
+.face.bottom{ transform: rotateX(-90deg) translateZ(85px); }
+@media (prefers-reduced-motion: reduce){ .cube{ animation:none; transform: rotateX(-24deg) rotateY(-35deg);} }
+
+.closing-wrap{ text-align:center; display:flex; flex-direction:column; align-items:center; }
+.closing-wrap .badge{ width:56px; height:56px; margin-bottom:26px; }
+.closing-wrap h1{ font-size:38px; }
+.closing-link{ font-family:var(--font-mono); font-size:12.5px; color:var(--cyan); margin-top:18px; }
+
+.footnote{ position:absolute; bottom:18px; left:64px; font-family:var(--font-mono); font-size:10px; color:var(--muted-2); letter-spacing:0.04em;}
+
+@media (max-width:900px){
+  .grid-2, .grid-2.rev, .goal-grid, .steps-row, .split-2, .hero-wrap{ grid-template-columns:1fr !important; }
+  h1.slide-title{ font-size:28px; }
+  .slide{ padding:24px 22px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ============ SVG ICON SPRITE ============ -->
+<svg width="0" height="0" style="position:absolute">
+<symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="0.6" fill="currentColor"/></symbol>
+<symbol id="i-cursor" viewBox="0 0 24 24"><path d="M5 3l14 8-6 1.5L11 19z"/></symbol>
+<symbol id="i-group" viewBox="0 0 24 24"><rect x="4" y="4" width="10" height="10" rx="1.5"/><rect x="10" y="10" width="10" height="10" rx="1.5"/></symbol>
+<symbol id="i-ruler" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="8" rx="1"/><path d="M6 8v3M10 8v2M14 8v3M18 8v2"/></symbol>
+<symbol id="i-font" viewBox="0 0 24 24"><path d="M6 19L11 5h2l5 14M7.5 14h9"/></symbol>
+<symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18a4 4 0 010-8 5 5 0 019.6-1.5A4 4 0 0118 18H7z"/><path d="M12 12v6M9.5 15.5L12 13l2.5 2.5"/></symbol>
+<symbol id="i-palette" viewBox="0 0 24 24"><path d="M12 3a9 8 0 100 16c1.1 0 2-.9 1.6-1.9-.3-.7.2-1.5 1-1.5H16a4 4 0 004-4c0-5-3.5-8.6-8-8.6z"/><circle cx="7.5" cy="12" r="1"/><circle cx="9" cy="8.5" r="1"/><circle cx="14.5" cy="8" r="1"/></symbol>
+<symbol id="i-cogs" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v2.2M12 18.8V21M21 12h-2.2M5.2 12H3M18.4 5.6l-1.5 1.5M7.1 16.9l-1.5 1.5M18.4 18.4l-1.5-1.5M7.1 7.1L5.6 5.6"/></symbol>
+<symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M7 10a5 5 0 1110 0c0 2.2-1.3 3.3-2.2 4.2-.5.5-.8 1-.8 1.8H10c0-.8-.3-1.3-.8-1.8C8.3 13.3 7 12.2 7 10z"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></symbol>
+<symbol id="i-print" viewBox="0 0 24 24"><path d="M7 8V3h10v5M7 17H5a2 2 0 01-2-2v-4a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2h-2M7 14h10v7H7z"/></symbol>
+<symbol id="i-layer" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5M3 8l9 5 9-5" opacity="0"/><path d="M3 13.5l9 4.5 9-4.5"/></symbol>
+<symbol id="i-box" viewBox="0 0 24 24"><path d="M3 8l9-5 9 5-9 5-9-5z"/><path d="M3 8v8l9 5 9-5V8M12 13v8"/></symbol>
+<symbol id="i-grad" viewBox="0 0 24 24"><path d="M12 4L2 9l10 5 10-5-10-5z"/><path d="M6 12v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5"/></symbol>
+<symbol id="i-arrow-left" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+<symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+<symbol id="i-expand" viewBox="0 0 24 24"><path d="M9 4H4v5M15 4h5v5M4 15v5h5M20 15v5h-5"/></symbol>
+</svg>
+
+<!-- ============ NAVBAR (no login) ============ -->
+<nav class="navbar">
+  <div class="brand">
+    <div class="cube-stage" style="height:auto;perspective:120px;">
+      <div class="brand-mark"><span></span><span></span><span></span></div>
+    </div>
+    <div class="brand-text">Tinkercad Lab<small>Modul Pelatihan Desain 3D</small></div>
+  </div>
+  <div class="nav-controls">
+    <div class="slide-counter"><b id="curNum">01</b> / 16</div>
+    <div class="nav-btn-group">
+      <button class="nav-btn" id="prevBtn" aria-label="Slide sebelumnya"><svg class="icon"><use href="#i-arrow-left"/></svg></button>
+      <button class="nav-btn" id="fsBtn" aria-label="Layar penuh"><svg class="icon"><use href="#i-expand"/></svg></button>
+      <button class="nav-btn primary" id="nextBtn" aria-label="Slide berikutnya"><svg class="icon"><use href="#i-arrow-right"/></svg></button>
+    </div>
+  </div>
+</nav>
+
+<!-- ============ STAGE ============ -->
+<main class="stage">
+
+  <!-- 1: TITLE -->
+  <section class="slide active">
+    <div class="slide-inner hero-wrap">
+      <div>
+        <div class="eyebrow">Modul Pelatihan</div>
+        <h1 class="slide-title" style="font-size:52px;">Desain 3D dengan Tinkercad</h1>
+        <p class="slide-sub" style="font-size:16.5px; max-width:520px;">Dari bentuk dasar sampai siap cetak 3D — dirancang untuk siswa SMA/SMK yang baru memulai.</p>
+        <div class="hero-divider"></div>
+        <div class="meta-row"><span class="k">Durasi Sesi</span><span class="v">1 jam</span></div>
+        <div class="meta-row"><span class="k">Sasaran</span><span class="v">Siswa SMA/SMK · Pemula</span></div>
+        <div class="meta-row"><span class="k">Alat</span><span class="v">Browser + akun Tinkercad</span></div>
+      </div>
+      <div class="cube-stage">
+        <div class="cube">
+          <div class="face front">FRONT</div>
+          <div class="face back">BACK</div>
+          <div class="face right">RIGHT</div>
+          <div class="face left">LEFT</div>
+          <div class="face top">TOP</div>
+          <div class="face bottom">BOTTOM</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2: TUJUAN PEMBELAJARAN -->
+  <section class="slide">
+    <div class="slide-inner">
+      <div class="eyebrow">Sebelum Mulai</div>
+      <h1 class="slide-title">Tujuan Pembelajaran</h1>
+      <p class="slide-sub">Setelah mengikuti sesi ini, peserta mampu:</p>
+      <div class="goal-grid">
+        <div class="card goal-card"><div class="badge"><svg class="icon"><use href="#i-target"/></svg></div><p>Memahami konsep dasar desain 3D dan kegunaannya di dunia nyata</p></div>
+        <div class="card goal-card"><div class="badge"><svg class="icon"><use href="#i-cursor"/></svg></div><p>Menguasai navigasi &amp; antarmuka kerja Tinkercad</p></div>
+        <div class="card goal-card"><div class="badge"><svg class="icon"><use href="#i-group"/></svg></div><p>Membuat, menggabungkan, dan memodifikasi bentuk 3D</p></div>
+        <div class="card goal-card"><div class="badge"><svg class="icon"><use href="#i-ruler"/></svg></div><p>Menggunakan alat ukur untuk mendesain secara presisi</p></div>
+        <div class="card goal-card"><div class="badge"><svg class="icon"><use href="#i-font"/></svg></div><p>Menambahkan teks 3D dan mengatur warna objek</p></div>
+        <div class="card goal-card"><div class="badge"><svg class="icon"><use href="#i-cloud"/></svg></div><p>Mengekspor desain ke format siap cetak 3D (STL)</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3: APA ITU DESAIN 3D & TINKERCAD -->
+  <section class="slide">
+    <div class="slide-inner">
+      <div class="eyebrow">Pengantar</div>
+      <h1 class="slide-title">Apa itu Desain 3D &amp; Tinkercad?</h1>
+      <div class="split-2" style="margin-top:26px;">
+        <div class="card-dark">
+          <div class="mini-title on-dark">Desain 3D</div>
+          <p style="font-size:13.5px; color:#D8D5CC; line-height:1.65; margin:14px 0 0;">Proses membuat model benda dalam ruang 3 dimensi (panjang, lebar, tinggi) menggunakan perangkat lunak komputer.</p>
+          <p style="font-size:13.5px; color:#D8D5CC; line-height:1.65; margin:14px 0 0;">Digunakan untuk merancang produk, prototipe, komponen mesin, aksesori, hingga model cetak 3D.</p>
+        </div>
+        <div class="card">
+          <div class="mini-title">Tinkercad</div>
+          <ul class="list" style="margin-top:14px;">
+            <li>Aplikasi desain 3D berbasis browser, gratis, dari Autodesk</li>
+            <li>Tidak perlu instalasi — cukup akun &amp; koneksi internet</li>
+            <li>Antarmuka sederhana: cocok untuk pemula &amp; pelajar</li>
+            <li>Hasil desain bisa diekspor untuk dicetak dengan printer 3D</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4: ANTARMUKA KERJA -->
+  <section class="slide">
+    <div class="slide-inner grid-2">
+      <div>
+        <div class="frame"><img src="img/Screenshot_2026-07-07_085821.png" alt="Tampilan workplane Tinkercad"></div>
+      </div>
+      <div>
+        <div class="eyebrow">Langkah 01</div>
+        <h1 class="slide-title" style="font-size:32px;">Mengenal Antarmuka Kerja</h1>
+        <p class="slide-sub" style="font-size:13.5px;">Tampilan awal ruang kerja (workplane) saat proyek baru dibuka.</p>
+        <ul class="list">
+          <li>Kotak nama proyek — ganti nama sebelum mulai bekerja</li>
+          <li>Ikon Home, Zoom (+/–), dan Orbit — untuk navigasi tampilan</li>
+          <li>Kubus orientasi di kiri atas — klik untuk memutar sudut pandang</li>
+          <li>Panel bidang biru transparan — inilah "workplane", tempat objek diletakkan</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5: BASIC SHAPES -->
+  <section class="slide">
+    <div class="slide-inner grid-2 rev">
+      <div>
+        <div class="eyebrow">Langkah 02</div>
+        <h1 class="slide-title" style="font-size:32px;">Panel Bentuk Dasar</h1>
+        <p class="slide-sub" style="font-size:13.5px;">Semua objek 3D dibangun dari kombinasi bentuk-bentuk dasar ini.</p>
+        <div class="mini-title" style="font-size:14px;">Cara pakai</div>
+        <ul class="list" style="margin-top:12px;">
+          <li>Pilih kategori "Basic Shapes" di panel kanan</li>
+          <li>Seret (drag) bentuk ke workplane</li>
+          <li>Ubah ukuran, posisi, rotasi, dan warna sesuka Anda</li>
+          <li>Kombinasikan beberapa bentuk untuk model yang kompleks</li>
+        </ul>
+      </div>
+      <div><div class="frame"><img src="img/Screenshot_2026-07-06_194611.png" alt="Panel Basic Shapes Tinkercad"></div></div>
+    </div>
+  </section>
+
+  <!-- 6: SOLID, HOLE, UNION -->
+  <section class="slide">
+    <div class="slide-inner grid-2">
+      <div><div class="frame"><img src="img/Screenshot_2026-07-06_194737.png" alt="Solid Hole dan Union di Tinkercad"></div></div>
+      <div>
+        <div class="eyebrow">Langkah 03</div>
+        <h1 class="slide-title" style="font-size:32px;">Solid, Hole &amp; Menggabungkan Objek</h1>
+        <p class="slide-sub" style="font-size:13.5px;">Dua sifat objek yang jadi kunci membentuk model gabungan.</p>
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <div class="card" style="padding:16px 18px;">
+            <div style="font-family:var(--font-mono); font-size:11px; letter-spacing:.1em; color:var(--amber); margin-bottom:6px;">SOLID</div>
+            <p style="margin:0; font-size:12.8px; color:var(--muted); line-height:1.5;">Objek padat berwarna merah — bagian yang akan tercetak/terlihat.</p>
+          </div>
+          <div class="card" style="padding:16px 18px;">
+            <div style="font-family:var(--font-mono); font-size:11px; letter-spacing:.1em; color:var(--cyan); margin-bottom:6px;">HOLE</div>
+            <p style="margin:0; font-size:12.8px; color:var(--muted); line-height:1.5;">Objek transparan bergaris — memotong/melubangi objek solid yang bertumpang tindih.</p>
+          </div>
+          <div class="card" style="padding:16px 18px; display:flex; gap:14px; align-items:center;">
+            <div class="badge" style="width:36px;height:36px;flex:none;"><svg class="icon" style="width:16px;height:16px;"><use href="#i-group"/></svg></div>
+            <p style="margin:0; font-size:12.8px; color:var(--ink); line-height:1.5;"><b>Group (Ctrl+G)</b> — menyatukan objek terpilih; solid menyatu, hole melubangi solid di sekitarnya.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7: WARNA OBJEK -->
+  <section class="slide">
+    <div class="slide-inner grid-2 rev">
+      <div>
+        <div class="eyebrow">Langkah 04</div>
+        <h1 class="slide-title" style="font-size:32px;">Mengubah Warna Objek</h1>
+        <p class="slide-sub" style="font-size:13.5px;">Klik objek terpilih, lalu klik lingkaran warna pada panel Properties.</p>
+        <ul class="list">
+          <li>Tab "Presets" untuk warna siap pakai</li>
+          <li>Tab "Custom" untuk memilih warna bebas (RGB/HEX)</li>
+          <li>"Transparent" membuat objek tembus pandang — berguna melihat bagian dalam</li>
+          <li>Warna tak memengaruhi hasil cetak (kecuali printer berwarna)</li>
+        </ul>
+      </div>
+      <div><div class="frame"><img src="img/Screenshot_2026-07-06_194749.png" alt="Palet warna di Tinkercad"></div></div>
+    </div>
+  </section>
+
+  <!-- 8: TEKS 3D -->
+  <section class="slide">
+    <div class="slide-inner grid-2">
+      <div><div class="frame"><img src="img/Screenshot_2026-07-06_194824.png" alt="Alat teks 3D di Tinkercad"></div></div>
+      <div>
+        <div class="eyebrow">Langkah 05</div>
+        <h1 class="slide-title" style="font-size:32px;">Menambahkan Teks 3D</h1>
+        <p class="slide-sub" style="font-size:13.5px;">Bentuk "Text" mengubah tulisan menjadi objek 3D.</p>
+        <ul class="list">
+          <li>Kolom "Text" — ganti isi tulisan</li>
+          <li>"Font" — pilih gaya huruf (Sans, Serif, Sans Mono, dll.)</li>
+          <li>"Height" — mengatur ketebalan huruf</li>
+          <li>"Bevel" &amp; "Segments" — menghaluskan tepi huruf</li>
+          <li>Cocok untuk label nama, gantungan kunci, atau penanda model</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9: RULER TOOL -->
+  <section class="slide">
+    <div class="slide-inner">
+      <div class="eyebrow">Langkah 06</div>
+      <h1 class="slide-title">Alat Ukur (Ruler) untuk Presisi</h1>
+      <p class="slide-sub">Ruler membantu menempatkan &amp; mengukur objek secara akurat, dalam satuan milimeter.</p>
+      <div class="grid-2" style="grid-template-columns: 0.55fr 1.45fr; align-items:start;">
+        <div><div class="frame"><img src="img/Screenshot_2026-07-06_194920.png" alt="Ikon Ruler tool"></div><div class="frame-cap">IKON RULER (R)</div></div>
+        <div><div class="frame"><img src="img/Screenshot_2026-07-06_194937.png" alt="Pengukuran jarak dengan Ruler"></div><div class="frame-cap">JARAK &amp; POSISI TERHADAP WORKPLANE — MIS. 50.00 MM, 80.00 MM</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10: WORKSPACE SETTINGS -->
+  <section class="slide">
+    <div class="slide-inner grid-2 rev">
+      <div>
+        <div class="eyebrow">Langkah 07</div>
+        <h1 class="slide-title" style="font-size:32px;">Pengaturan Ruang Kerja</h1>
+        <p class="slide-sub" style="font-size:13.5px;">Sesuaikan satuan, ukuran plat cetak, dan tampilan grid.</p>
+        <ul class="list">
+          <li>Units: Metric (mm) — satuan standar untuk cetak 3D</li>
+          <li>Width/Length plat kerja, mis. 200 × 200 mm</li>
+          <li>Show grid &amp; Show shadows — bantu visual saat mendesain</li>
+          <li>Snap Grid — jarak "lompatan" objek saat digeser, agar ukuran rapi</li>
+        </ul>
+      </div>
+      <div><div class="frame"><img src="img/Screenshot_2026-07-06_194902.png" alt="Dialog Workspace Settings"></div></div>
+    </div>
+  </section>
+
+  <!-- 11: STUDI KASUS -->
+  <section class="slide">
+    <div class="slide-inner grid-2">
+      <div><div class="frame"><img src="img/Screenshot_2026-07-06_194848.png" alt="Studi kasus kotak bertutup"></div></div>
+      <div>
+        <div class="eyebrow">Latihan Praktik</div>
+        <h1 class="slide-title" style="font-size:30px;">Kotak Bertutup Berlabel</h1>
+        <p class="slide-sub" style="font-size:13.5px;">Studi kasus — menggabungkan semua teknik yang telah dipelajari.</p>
+        <div class="card-dark">
+          <ul class="list numbered on-dark">
+            <li>Buat kubus, jadikan "Hole", lalu Group dengan kubus solid → jadi wadah berongga</li>
+            <li>Buat bentuk pipih untuk tutup kotak</li>
+            <li>Tambahkan teks (mis. nama/label) di atas tutup</li>
+            <li>Group teks dengan tutup agar menyatu</li>
+            <li>Susun &amp; sejajarkan semua bagian di atas workplane</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12: HASIL AKHIR -->
+  <section class="slide">
+    <div class="slide-inner grid-2 rev">
+      <div>
+        <div class="eyebrow">Penyelesaian</div>
+        <h1 class="slide-title" style="font-size:30px;">Hasil Akhir &amp; Pemberian Nama Objek</h1>
+        <p class="slide-sub" style="font-size:13.5px;">Beri nama tiap bagian (mis. "tutup") agar mudah dikenali dalam proyek.</p>
+        <ul class="list">
+          <li>Klik dua kali objek untuk mengganti namanya</li>
+          <li>Nama yang jelas memudahkan saat proyek makin kompleks</li>
+          <li>Periksa dari berbagai sudut pandang sebelum lanjut</li>
+          <li>Pastikan semua bagian sudah tergabung sesuai rencana desain</li>
+        </ul>
+      </div>
+      <div><div class="frame"><img src="img/Screenshot_2026-07-06_194958.png" alt="Hasil akhir proyek dengan penamaan objek"></div></div>
+    </div>
+  </section>
+
+  <!-- 13: EXPORT & CETAK 3D -->
+  <section class="slide">
+    <div class="slide-inner">
+      <div class="eyebrow">Menuju Fisik</div>
+      <h1 class="slide-title">Ekspor Desain &amp; Cetak 3D</h1>
+      <p class="slide-sub">Setelah desain selesai, siapkan file untuk dicetak.</p>
+      <div class="steps-row">
+        <div class="card step-card"><div class="tag">01</div><div class="badge"><svg class="icon"><use href="#i-check"/></svg></div><h4>Selesaikan Desain</h4><p>Pastikan semua objek sudah di-Group dan tidak ada bagian melayang/menembus.</p></div>
+        <div class="card step-card"><div class="tag">02</div><div class="badge"><svg class="icon"><use href="#i-cloud"/></svg></div><h4>Klik "Export"</h4><p>Pilih format .STL (paling umum) atau .OBJ untuk kebutuhan lain.</p></div>
+        <div class="card step-card"><div class="tag">03</div><div class="badge"><svg class="icon"><use href="#i-cogs"/></svg></div><h4>Slicing</h4><p>Buka file STL di aplikasi slicer (mis. Cura) untuk diubah jadi instruksi printer.</p></div>
+        <div class="card step-card"><div class="tag">04</div><div class="badge"><svg class="icon"><use href="#i-print"/></svg></div><h4>Cetak</h4><p>Kirim hasil slicing ke printer 3D dan mulai proses pencetakan.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 14: TIPS & KESALAHAN -->
+  <section class="slide">
+    <div class="slide-inner">
+      <div class="eyebrow">Sebelum Lanjut</div>
+      <h1 class="slide-title">Tips &amp; Kesalahan yang Sering Terjadi</h1>
+      <div class="split-2" style="margin-top:22px;">
+        <div class="card">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+            <div class="badge cyan" style="width:36px;height:36px;"><svg class="icon" style="width:16px;height:16px;"><use href="#i-bulb"/></svg></div>
+            <div class="mini-title" style="font-size:15px;margin:0;">Tips Produktif</div>
+          </div>
+          <ul class="list">
+            <li>Gunakan Ctrl+D untuk menduplikasi objek dengan cepat</li>
+            <li>Simpan pekerjaan berkala (auto-save, tapi cek koneksi internet)</li>
+            <li>Gunakan tampilan atas/samping untuk menyusun objek presisi</li>
+            <li>Manfaatkan Align untuk menyejajarkan beberapa objek sekaligus</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+            <div class="badge" style="width:36px;height:36px; background:rgba(214,114,95,0.14); border-color:rgba(214,114,95,0.3); color:var(--danger);"><svg class="icon" style="width:16px;height:16px;"><use href="#i-check"/></svg></div>
+            <div class="mini-title" style="font-size:15px;margin:0;">Hindari Kesalahan Ini</div>
+          </div>
+          <ul class="list">
+            <li>Lupa meng-Group hole dengan solid → lubang tidak terbentuk</li>
+            <li>Ukuran objek terlalu tipis (&lt; 1 mm) → rawan patah saat dicetak</li>
+            <li>Objek saling menembus tanpa disatukan → file STL bermasalah</li>
+            <li>Tidak mengecek semua sudut pandang sebelum ekspor</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 15: EVALUASI -->
+  <section class="slide">
+    <div class="slide-inner">
+      <div class="eyebrow">Penilaian</div>
+      <h1 class="slide-title">Evaluasi Latihan Mandiri</h1>
+      <p class="slide-sub">Tugas: rancang benda sederhana (gantungan kunci/wadah kecil) memuat nama Anda.</p>
+      <div class="card" style="padding:6px;">
+        <table class="cad">
+          <tr><th>Aspek Penilaian</th><th>Kriteria</th></tr>
+          <tr><td>Bentuk</td><td>Model tersusun dari kombinasi bentuk dasar yang sesuai rencana</td></tr>
+          <tr><td>Solid/Hole</td><td>Ada penerapan hole untuk membuat lubang/rongga secara benar</td></tr>
+          <tr><td>Presisi</td><td>Menggunakan Ruler untuk menentukan ukuran &amp; posisi objek</td></tr>
+          <tr><td>Teks 3D</td><td>Nama/label tercetak jelas dan tergabung rapi dengan model</td></tr>
+          <tr><td>Kesiapan Cetak</td><td>Semua objek ter-Group, tidak ada bagian menembus/mengambang</td></tr>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- 16: PENUTUP -->
+  <section class="slide">
+    <div class="slide-inner closing-wrap">
+      <div class="badge"><svg class="icon" style="width:26px;height:26px;"><use href="#i-grad"/></svg></div>
+      <h1 class="slide-title">Selamat Berkarya!</h1>
+      <div class="hero-divider"></div>
+      <p class="slide-sub" style="text-align:center; max-width:520px;">Teruslah bereksperimen dengan bentuk, ukuran, dan ide — semakin sering berlatih, semakin mahir mendesain di Tinkercad.</p>
+      <div class="closing-link">tinkercad.com/learn</div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ============ RULER NAV ============ -->
+<div class="ruler">
+  <div class="ruler-track" id="rulerTrack">
+    <div class="ruler-baseline"></div>
+    <div class="ruler-fill" id="rulerFill"></div>
+    <div class="ruler-pointer" id="rulerPointer"></div>
+  </div>
+  <div class="ruler-unit">mm</div>
+</div>
+
+<script>
+(function(){
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const total = slides.length;
+  let current = 0;
+
+  const curNum = document.getElementById('curNum');
+  const rulerTrack = document.getElementById('rulerTrack');
+  const rulerFill = document.getElementById('rulerFill');
+  const rulerPointer = document.getElementById('rulerPointer');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const fsBtn = document.getElementById('fsBtn');
+
+  // build ruler ticks — each slide = 10mm apart, echoing Tinkercad's own ruler tool
+  const ticks = [];
+  for(let i=0;i<total;i++){
+    const btn = document.createElement('button');
+    btn.className = 'tick-btn';
+    btn.style.left = (i/(total-1)*100) + '%';
+    btn.innerHTML = '<div class="stem"></div><div class="num">' + String(i*10).padStart(2,'0') + '</div>';
+    btn.addEventListener('click', () => goTo(i));
+    rulerTrack.appendChild(btn);
+    ticks.push(btn);
+  }
+
+  function update(){
+    slides.forEach((s,i) => s.classList.toggle('active', i === current));
+    curNum.textContent = String(current+1).padStart(2,'0');
+    const pct = (current/(total-1))*100;
+    rulerFill.style.width = pct + '%';
+    rulerPointer.style.left = pct + '%';
+    ticks.forEach((t,i) => t.classList.toggle('current', i === current));
+    prevBtn.disabled = current === 0;
+    nextBtn.disabled = current === total-1;
+    prevBtn.style.opacity = current === 0 ? 0.35 : 1;
+    nextBtn.style.opacity = current === total-1 ? 0.35 : 1;
+  }
+
+  function goTo(i){
+    current = Math.max(0, Math.min(total-1, i));
+    update();
+  }
+  function next(){ goTo(current+1); }
+  function prev(){ goTo(current-1); }
+
+  prevBtn.addEventListener('click', prev);
+  nextBtn.addEventListener('click', next);
+
+  document.addEventListener('keydown', (e) => {
+    if(['ArrowRight','ArrowDown','PageDown',' '].includes(e.key)){ e.preventDefault(); next(); }
+    else if(['ArrowLeft','ArrowUp','PageUp'].includes(e.key)){ e.preventDefault(); prev(); }
+    else if(e.key === 'Home'){ e.preventDefault(); goTo(0); }
+    else if(e.key === 'End'){ e.preventDefault(); goTo(total-1); }
+    else if(e.key.toLowerCase() === 'f'){ toggleFullscreen(); }
+  });
+
+  // touch swipe
+  let touchX = null;
+  document.addEventListener('touchstart', e => touchX = e.touches[0].clientX, {passive:true});
+  document.addEventListener('touchend', e => {
+    if(touchX === null) return;
+    const dx = e.changedTouches[0].clientX - touchX;
+    if(Math.abs(dx) > 50){ dx < 0 ? next() : prev(); }
+    touchX = null;
+  }, {passive:true});
+
+  function toggleFullscreen(){
+    if(!document.fullscreenElement){ document.documentElement.requestFullscreen().catch(()=>{}); }
+    else{ document.exitFullscreen(); }
+  }
+  fsBtn.addEventListener('click', toggleFullscreen);
+
+  update();
+})();
+</script>
+</body>
+</html>
